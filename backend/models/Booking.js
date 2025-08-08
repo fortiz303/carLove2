@@ -120,6 +120,7 @@ const bookingSchema = new mongoose.Schema(
     payment: {
       stripePaymentIntentId: String,
       stripeCustomerId: String,
+      stripeSubscriptionId: String, // For subscription-related bookings
       paymentStatus: {
         type: String,
         enum: ["pending", "paid", "failed", "refunded"],
@@ -130,6 +131,16 @@ const bookingSchema = new mongoose.Schema(
     },
     // Special instructions
     specialInstructions: String,
+    // Promo code information
+    promoCode: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "PromoCode",
+    },
+    discountAmount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     // Staff assignment
     assignedStaff: {
       type: mongoose.Schema.Types.ObjectId,
@@ -210,6 +221,7 @@ const bookingSchema = new mongoose.Schema(
 bookingSchema.index({ user: 1, status: 1 });
 bookingSchema.index({ scheduledDate: 1, status: 1 });
 bookingSchema.index({ "payment.stripePaymentIntentId": 1 });
+bookingSchema.index({ "payment.stripeSubscriptionId": 1 });
 bookingSchema.index({ status: 1, scheduledDate: 1 });
 
 // Virtual for booking end time

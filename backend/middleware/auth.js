@@ -193,6 +193,7 @@ const verifyToken = (token) => {
 module.exports = {
   authenticateJWT,
   authenticateToken,
+  protect: authenticateJWT, // Alias for authenticateJWT
   requireAdmin,
   authorize,
   optionalAuth,

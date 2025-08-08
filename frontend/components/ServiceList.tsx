@@ -5,7 +5,10 @@ import { useBooking } from "@/contexts/BookingContext";
 import React from "react"; // Added missing import
 import { useRouter } from "next/navigation";
 import CarDetailsDialog from "./CarDetailsDialog";
+import VehicleSelector from "./VehicleSelector";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
+import { usePricing } from "@/hooks/usePricing";
 
 export interface ServiceOption {
   id: number;
@@ -27,7 +30,16 @@ const ServiceList = ({ options, extras }: ServiceListProps) => {
     setSelectedExtras,
     carDetails,
     setCarDetails,
+    selectedVehicle,
+    setSelectedVehicle,
+    selectedFrequency,
   } = useBooking();
+  const { user } = useAuth();
+  const {
+    pricing,
+    loading: pricingLoading,
+    getServiceDisplayInfo,
+  } = usePricing();
   const router = useRouter();
   const [error, setError] = React.useState<string>("");
   const [showCarDialog, setShowCarDialog] = React.useState(false);
@@ -37,8 +49,8 @@ const ServiceList = ({ options, extras }: ServiceListProps) => {
       setError("Please select a service to continue.");
       return;
     }
-    if (!carDetails) {
-      setError("Please add your vehicle details to continue.");
+    if (!selectedVehicle && !carDetails) {
+      setError("Please select or add your vehicle details to continue.");
       return;
     }
     setError("");
@@ -47,6 +59,28 @@ const ServiceList = ({ options, extras }: ServiceListProps) => {
 
   const handleCarDetailsSave = (details: any) => {
     setCarDetails(details);
+    setError("");
+  };
+
+  const handleVehicleSelect = (vehicle: any) => {
+    if (vehicle) {
+      // Convert Vehicle to CarDetails format
+      const carDetailsData = {
+        make: vehicle.make,
+        model: vehicle.model,
+        year: vehicle.year,
+        color: vehicle.color,
+        type: vehicle.type,
+        licensePlate: vehicle.licensePlate,
+        vin: vehicle.vin,
+        nickname: vehicle.nickname,
+      };
+      setCarDetails(carDetailsData);
+      setSelectedVehicle(vehicle);
+    } else {
+      setCarDetails(null);
+      setSelectedVehicle(null);
+    }
     setError("");
   };
 
@@ -86,6 +120,19 @@ const ServiceList = ({ options, extras }: ServiceListProps) => {
                 <p className="text-xs text-gray-500 mt-1 leading-tight">
                   {option.description}
                 </p>
+                {selectedServiceId === option.id && pricing && (
+                  <div className="mt-2 text-center">
+                    <p className="text-sm font-semibold text-green-600">
+                      ${pricing.subtotal.toFixed(2)}
+                    </p>
+                    {pricing.frequencyDiscount > 0 && (
+                      <p className="text-xs text-gray-500">
+                        Save ${pricing.frequencyDiscount.toFixed(2)} with{" "}
+                        {selectedFrequency}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -98,7 +145,7 @@ const ServiceList = ({ options, extras }: ServiceListProps) => {
           Customize Your Service
         </h3>
         <p className="text-sm text-gray-500 mb-3">
-          Select Any Extras You’d Like To Include:
+          Add these extras to enhance your detailing experience:
         </p>
         <div className="flex flex-wrap gap-2">
           {extras.map((extra, i) => {
@@ -134,47 +181,62 @@ const ServiceList = ({ options, extras }: ServiceListProps) => {
           })}
         </div>
       </div>
-      {/* Car Details Section */}
-      <div className="max-w-md mx-auto px-4 mt-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-1">
-          Vehicle Information
-        </h3>
-        <p className="text-sm text-gray-500 mb-3">
-          Please provide your vehicle details:
-        </p>
 
-        {carDetails ? (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="font-semibold text-green-800">
-                  {carDetails.year} {carDetails.make} {carDetails.model}
-                </p>
-                <p className="text-sm text-green-600">
-                  Color: {carDetails.color} | Type: {carDetails.type}
-                </p>
-                {carDetails.licensePlate && (
-                  <p className="text-sm text-green-600">
-                    License: {carDetails.licensePlate}
-                  </p>
-                )}
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowCarDialog(true)}
-                className="text-green-600 border-green-300 hover:bg-green-100"
-              >
-                Edit
-              </Button>
-            </div>
-          </div>
+      {/* Vehicle Selection Section */}
+      <div className="max-w-md mx-auto px-4 mt-6">
+        {user ? (
+          <VehicleSelector
+            onVehicleSelect={handleVehicleSelect}
+            selectedVehicle={selectedVehicle}
+          />
         ) : (
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
-            <p className="text-gray-600 mb-3">No vehicle details added yet.</p>
-            <Button onClick={() => setShowCarDialog(true)} className="w-full">
-              Add Vehicle Details
-            </Button>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">
+              Vehicle Information
+            </h3>
+            <p className="text-sm text-gray-500 mb-3">
+              Please provide your vehicle details:
+            </p>
+
+            {carDetails ? (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="font-semibold text-green-800">
+                      {carDetails.year} {carDetails.make} {carDetails.model}
+                    </p>
+                    <p className="text-sm text-green-600">
+                      Color: {carDetails.color} | Type: {carDetails.type}
+                    </p>
+                    {carDetails.licensePlate && (
+                      <p className="text-sm text-green-600">
+                        License: {carDetails.licensePlate}
+                      </p>
+                    )}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowCarDialog(true)}
+                    className="text-green-600 border-green-300 hover:bg-green-100"
+                  >
+                    Edit
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+                <p className="text-gray-600 mb-3">
+                  No vehicle details added yet.
+                </p>
+                <Button
+                  onClick={() => setShowCarDialog(true)}
+                  className="w-full"
+                >
+                  Add Vehicle Details
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>

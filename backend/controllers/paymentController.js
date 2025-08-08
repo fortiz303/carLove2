@@ -39,7 +39,26 @@ const createPaymentIntent = async (req, res) => {
 
     // Create or get Stripe customer
     let customerId = booking.user.stripeCustomerId;
+
+    // Check if existing customer ID is valid
+    if (customerId) {
+      try {
+        await stripe.customers.retrieve(customerId);
+        console.log("✅ Using existing customer ID:", customerId);
+      } catch (error) {
+        console.log(
+          "❌ Invalid customer ID, creating new customer:",
+          customerId
+        );
+        customerId = null; // Reset to null so we create a new customer
+      }
+    }
+
     if (!customerId) {
+      console.log(
+        "🔄 Creating new Stripe customer for user:",
+        booking.user.email
+      );
       const customer = await stripe.customers.create({
         email: booking.user.email,
         name: booking.user.fullName,
@@ -49,6 +68,7 @@ const createPaymentIntent = async (req, res) => {
       });
 
       customerId = customer.id;
+      console.log("✅ New customer created:", customerId);
 
       // Save customer ID to user
       await User.findByIdAndUpdate(booking.user._id, {
@@ -57,6 +77,10 @@ const createPaymentIntent = async (req, res) => {
     }
 
     // Create payment intent
+    console.log("🔄 Creating payment intent for booking:", booking._id);
+    console.log("💰 Amount:", booking.totalAmount);
+    console.log("👤 Customer ID:", customerId);
+
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(booking.totalAmount * 100), // Convert to cents
       currency: "usd",
@@ -69,7 +93,21 @@ const createPaymentIntent = async (req, res) => {
       automatic_payment_methods: {
         enabled: true,
       },
+      // Use manual capture so frontend can confirm and capture
+      capture_method: "manual",
+      confirm: false, // Don't confirm automatically, let frontend handle it
     });
+
+    console.log("✅ Payment intent created:", paymentIntent.id);
+    console.log("📊 Payment intent status:", paymentIntent.status);
+    console.log(
+      "📊 Payment intent capture method:",
+      paymentIntent.capture_method
+    );
+    console.log(
+      "📊 Payment intent confirmation method:",
+      paymentIntent.confirmation_method
+    );
 
     // Update booking with payment intent ID
     booking.payment.stripePaymentIntentId = paymentIntent.id;
@@ -99,19 +137,41 @@ const confirmPayment = async (req, res) => {
   try {
     const { paymentIntentId } = req.body;
 
+    console.log("🔄 Confirming payment for intent:", paymentIntentId);
+
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
 
+    console.log("📊 Payment intent status:", paymentIntent.status);
+    console.log("📊 Payment intent amount:", paymentIntent.amount);
+    console.log("📊 Payment intent currency:", paymentIntent.currency);
+
     if (paymentIntent.status === "succeeded") {
-      const booking = await Booking.findOne({
+      console.log("✅ Payment already succeeded, updating booking...");
+
+      // Try to find booking by payment intent ID first
+      let booking = await Booking.findOne({
         "payment.stripePaymentIntentId": paymentIntentId,
       });
 
+      // If not found, try to find by subscription ID (for subscription payments)
       if (!booking) {
+        booking = await Booking.findOne({
+          "payment.stripeSubscriptionId": paymentIntentId,
+        });
+      }
+
+      if (!booking) {
+        console.error(
+          "❌ Booking not found for payment intent:",
+          paymentIntentId
+        );
         return res.status(404).json({
           success: false,
           message: "Booking not found",
         });
       }
+
+      console.log("✅ Found booking:", booking._id);
 
       // Update booking payment status
       booking.payment.paymentStatus = "paid";
@@ -119,19 +179,77 @@ const confirmPayment = async (req, res) => {
       booking.status = "confirmed";
       await booking.save();
 
+      console.log("✅ Booking updated successfully");
+
       res.json({
         success: true,
         message: "Payment confirmed successfully",
         data: { booking },
       });
+    } else if (paymentIntent.status === "requires_capture") {
+      console.log("💰 Payment requires capture, capturing now...");
+
+      // Capture the payment
+      const capturedPaymentIntent = await stripe.paymentIntents.capture(
+        paymentIntentId
+      );
+
+      console.log(
+        "✅ Payment captured successfully:",
+        capturedPaymentIntent.status
+      );
+
+      // Try to find booking by payment intent ID first
+      let booking = await Booking.findOne({
+        "payment.stripePaymentIntentId": paymentIntentId,
+      });
+
+      // If not found, try to find by subscription ID (for subscription payments)
+      if (!booking) {
+        booking = await Booking.findOne({
+          "payment.stripeSubscriptionId": paymentIntentId,
+        });
+      }
+
+      if (!booking) {
+        console.error(
+          "❌ Booking not found for payment intent:",
+          paymentIntentId
+        );
+        return res.status(404).json({
+          success: false,
+          message: "Booking not found",
+        });
+      }
+
+      console.log("✅ Found booking:", booking._id);
+
+      // Update booking payment status
+      booking.payment.paymentStatus = "paid";
+      booking.payment.paidAt = new Date();
+      booking.status = "confirmed";
+      await booking.save();
+
+      console.log("✅ Booking updated successfully");
+
+      res.json({
+        success: true,
+        message: "Payment captured and confirmed successfully",
+        data: { booking },
+      });
     } else {
+      console.log(
+        "⚠️ Payment intent status is not succeeded or requires_capture:",
+        paymentIntent.status
+      );
       res.status(400).json({
         success: false,
-        message: "Payment not completed",
+        message: `Payment not completed. Status: ${paymentIntent.status}`,
+        data: { status: paymentIntent.status },
       });
     }
   } catch (error) {
-    console.error("Confirm payment error:", error);
+    console.error("❌ Confirm payment error:", error);
     res.status(500).json({
       success: false,
       message: "Server error",
@@ -143,41 +261,65 @@ const confirmPayment = async (req, res) => {
 // @route   POST /api/payments/webhook
 // @access  Public
 const handleWebhook = async (req, res) => {
+  console.log("🔔 Webhook received:", {
+    method: req.method,
+    url: req.url,
+    headers: req.headers,
+    body: req.body,
+  });
+
   const sig = req.headers["stripe-signature"];
   let event;
 
   try {
+    console.log(
+      "🔍 Webhook secret:",
+      process.env.STRIPE_WEBHOOK_SECRET ? "Present" : "Missing"
+    );
+    console.log("🔍 Stripe signature:", sig ? "Present" : "Missing");
+    console.log(
+      "🔍 Request body length:",
+      req.body ? req.body.length : "No body"
+    );
+
     event = stripe.webhooks.constructEvent(
       req.body,
       sig,
       process.env.STRIPE_WEBHOOK_SECRET
     );
+    console.log("✅ Webhook signature verified, event type:", event.type);
   } catch (err) {
-    console.error("Webhook signature verification failed:", err.message);
+    console.error("❌ Webhook signature verification failed:", err.message);
+    console.error("❌ Error details:", err);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
   try {
+    console.log("🔄 Processing webhook event:", event.type);
     switch (event.type) {
       case "payment_intent.succeeded":
+        console.log("💰 Payment succeeded event received");
         await handlePaymentSucceeded(event.data.object);
         break;
 
       case "payment_intent.payment_failed":
+        console.log("❌ Payment failed event received");
         await handlePaymentFailed(event.data.object);
         break;
 
       case "charge.refunded":
+        console.log("💸 Refund event received");
         await handleRefund(event.data.object);
         break;
 
       default:
-        console.log(`Unhandled event type: ${event.type}`);
+        console.log(`⚠️ Unhandled event type: ${event.type}`);
     }
 
+    console.log("✅ Webhook processed successfully");
     res.json({ received: true });
   } catch (error) {
-    console.error("Webhook handler error:", error);
+    console.error("❌ Webhook handler error:", error);
     res.status(500).json({ error: "Webhook handler failed" });
   }
 };
@@ -185,9 +327,17 @@ const handleWebhook = async (req, res) => {
 // Handle successful payment
 const handlePaymentSucceeded = async (paymentIntent) => {
   try {
-    const booking = await Booking.findOne({
+    // Try to find booking by payment intent ID first
+    let booking = await Booking.findOne({
       "payment.stripePaymentIntentId": paymentIntent.id,
     });
+
+    // If not found, try to find by subscription ID (for subscription payments)
+    if (!booking) {
+      booking = await Booking.findOne({
+        "payment.stripeSubscriptionId": paymentIntent.id,
+      });
+    }
 
     if (!booking) {
       console.error("Booking not found for payment intent:", paymentIntent.id);
@@ -209,9 +359,17 @@ const handlePaymentSucceeded = async (paymentIntent) => {
 // Handle failed payment
 const handlePaymentFailed = async (paymentIntent) => {
   try {
-    const booking = await Booking.findOne({
+    // Try to find booking by payment intent ID first
+    let booking = await Booking.findOne({
       "payment.stripePaymentIntentId": paymentIntent.id,
     });
+
+    // If not found, try to find by subscription ID (for subscription payments)
+    if (!booking) {
+      booking = await Booking.findOne({
+        "payment.stripeSubscriptionId": paymentIntent.id,
+      });
+    }
 
     if (!booking) {
       console.error("Booking not found for payment intent:", paymentIntent.id);

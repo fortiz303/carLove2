@@ -276,7 +276,7 @@ export default function AdminDashboard() {
               <CardTitle>Quick Actions</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
                 <Link href="/admin/bookings">
                   <div className="p-4 bg-green-50 rounded-xl hover:bg-green-100 transition-colors cursor-pointer">
                     <Calendar className="w-8 h-8 text-green-600 mb-2" />
@@ -297,6 +297,16 @@ export default function AdminDashboard() {
                     </h3>
                     <p className="text-sm text-gray-600">
                       Handle customer support
+                    </p>
+                  </div>
+                </Link>
+
+                <Link href="/admin/promo-codes">
+                  <div className="p-4 bg-purple-50 rounded-xl hover:bg-purple-100 transition-colors cursor-pointer">
+                    <DollarSign className="w-8 h-8 text-purple-600 mb-2" />
+                    <h3 className="font-semibold text-gray-900">Promo Codes</h3>
+                    <p className="text-sm text-gray-600">
+                      Manage discount codes
                     </p>
                   </div>
                 </Link>

@@ -1,23 +1,5 @@
-const detailingOptions = [
-    {
-        id: 1,
-        image: "/images/image1.png",
-        title: "Interior Only",
-        description: "Deep Clean Seats, Carpets, Panels, And More.",
-    },
-    {
-        id: 2,
-        image: "/images/image2.png",
-        title: "Exterior Only",
-        description: "Wash, Polish, And Protect Your Car’s Exterior.",
-    },
-    {
-        id: 3,
-        image: "/images/image3.png",
-        title: "Full Detail",
-        description: "Complete Interior And Exterior Service.",
-    },
-];
+// This file now provides utility functions for booking appointment
+// The actual service data is fetched from the backend
 
 const bookingSlots = [
     {
@@ -59,4 +41,15 @@ const headerContent = {
     },
 };
 
-export { detailingOptions, extras, headerContent, bookingSlots };
+// Function to transform backend services to frontend format
+export const transformServicesToOptions = (services: any[]) => {
+    return services.map((service, index) => ({
+        id: index + 1, // Map to frontend IDs 1, 2, 3
+        image: service.image || `/images/image${index + 1}.png`,
+        title: service.name,
+        description: service.description,
+        backendId: service._id, // Store the backend ObjectId
+    }));
+};
+
+export { bookingSlots, extras, headerContent };

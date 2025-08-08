@@ -129,7 +129,7 @@ const DateTimePicker = () => {
               </div>
             ))}
             {days.map((day, index) => {
-              if (day === null) return <div key={index}></div>;
+              if (day === null) return <div key={`empty-${index}`}></div>;
 
               const formattedDate = `${year}-${(month + 1)
                 .toString()
@@ -144,7 +144,7 @@ const DateTimePicker = () => {
 
               return (
                 <button
-                  key={day}
+                  key={`day-${year}-${month}-${day}`}
                   onClick={() => !isDisabled && setSelectedDate(formattedDate)}
                   className={`w-8 h-8 rounded-full flex items-center justify-center mx-auto ${
                     isDisabled

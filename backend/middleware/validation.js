@@ -241,6 +241,53 @@ const validateDateRange = [
   handleValidationErrors,
 ];
 
+// Vehicle validation
+const validateVehicle = [
+  body("make")
+    .trim()
+    .notEmpty()
+    .withMessage("Vehicle make is required")
+    .isLength({ max: 50 })
+    .withMessage("Make cannot exceed 50 characters"),
+  body("model")
+    .trim()
+    .notEmpty()
+    .withMessage("Vehicle model is required")
+    .isLength({ max: 50 })
+    .withMessage("Model cannot exceed 50 characters"),
+  body("year")
+    .isInt({ min: 1900, max: new Date().getFullYear() + 1 })
+    .withMessage("Valid year is required"),
+  body("color")
+    .trim()
+    .notEmpty()
+    .withMessage("Vehicle color is required")
+    .isLength({ max: 30 })
+    .withMessage("Color cannot exceed 30 characters"),
+  body("type")
+    .isIn(["sedan", "suv", "truck", "luxury", "other"])
+    .withMessage("Valid vehicle type is required"),
+  body("licensePlate")
+    .optional()
+    .trim()
+    .isLength({ max: 20 })
+    .withMessage("License plate cannot exceed 20 characters"),
+  body("vin")
+    .optional()
+    .trim()
+    .isLength({ min: 17, max: 17 })
+    .withMessage("VIN must be exactly 17 characters"),
+  body("nickname")
+    .optional()
+    .trim()
+    .isLength({ max: 50 })
+    .withMessage("Nickname cannot exceed 50 characters"),
+  body("isDefault")
+    .optional()
+    .isBoolean()
+    .withMessage("isDefault must be a boolean"),
+];
+
 module.exports = {
   handleValidationErrors,
   validateRegistration,
@@ -255,4 +302,5 @@ module.exports = {
   validatePagination,
   validateSearch,
   validateDateRange,
+  validateVehicle,
 };

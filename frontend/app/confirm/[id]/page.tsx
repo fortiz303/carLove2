@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { apiService } from "@/lib/api";
 import { toast } from "sonner";
@@ -53,13 +53,14 @@ interface BookingData {
 }
 
 interface ConfirmPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default function ConfirmPage({ params }: ConfirmPageProps) {
-  const { id } = params;
+  const resolvedParams = use(params);
+  const { id } = resolvedParams;
   const { accessToken, isAuthenticated } = useAuth();
   const [booking, setBooking] = useState<BookingData | null>(null);
   const [loading, setLoading] = useState(true);

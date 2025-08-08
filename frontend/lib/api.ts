@@ -458,7 +458,146 @@ class ApiService {
         }, accessToken);
     }
 
+    // Vehicle methods
+    async getVehicles(accessToken: string): Promise<ApiResponse> {
+        return this.request('/user/vehicles', {}, accessToken);
+    }
 
+    async addVehicle(data: any, accessToken: string): Promise<ApiResponse> {
+        return this.request('/user/vehicles', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        }, accessToken);
+    }
+
+    async updateVehicle(vehicleId: string, data: any, accessToken: string): Promise<ApiResponse> {
+        return this.request(`/user/vehicles/${vehicleId}`, {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        }, accessToken);
+    }
+
+    async deleteVehicle(vehicleId: string, accessToken: string): Promise<ApiResponse> {
+        return this.request(`/user/vehicles/${vehicleId}`, {
+            method: 'DELETE',
+        }, accessToken);
+    }
+
+    async setDefaultVehicle(vehicleId: string, accessToken: string): Promise<ApiResponse> {
+        return this.request(`/user/vehicles/${vehicleId}/default`, {
+            method: 'PUT',
+        }, accessToken);
+    }
+
+    async getDefaultVehicle(accessToken: string): Promise<ApiResponse> {
+        return this.request('/user/vehicles/default', {}, accessToken);
+    }
+
+    // Promo code methods
+    async validatePromoCode(code: string, orderAmount: number, serviceIds: string[], accessToken: string): Promise<ApiResponse> {
+        return this.request('/promo-codes/validate', {
+            method: 'POST',
+            body: JSON.stringify({ code, orderAmount, serviceIds }),
+        }, accessToken);
+    }
+
+    // Admin promo code methods
+    async createPromoCode(data: any, accessToken: string): Promise<ApiResponse> {
+        return this.request('/admin/promo-codes', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        }, accessToken);
+    }
+
+    async getPromoCodes(accessToken: string, params?: string): Promise<ApiResponse> {
+        return this.request(`/admin/promo-codes${params ? `?${params}` : ''}`, {}, accessToken);
+    }
+
+    async getPromoCode(id: string, accessToken: string): Promise<ApiResponse> {
+        return this.request(`/admin/promo-codes/${id}`, {}, accessToken);
+    }
+
+    async updatePromoCode(id: string, data: any, accessToken: string): Promise<ApiResponse> {
+        return this.request(`/admin/promo-codes/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        }, accessToken);
+    }
+
+    async deletePromoCode(id: string, accessToken: string): Promise<ApiResponse> {
+        return this.request(`/admin/promo-codes/${id}`, {
+            method: 'DELETE',
+        }, accessToken);
+    }
+
+    async getPromoCodeStats(accessToken: string): Promise<ApiResponse> {
+        return this.request('/admin/promo-codes/stats', {}, accessToken);
+    }
+
+    // Pricing methods
+    async calculatePricing(data: {
+        selectedServiceId: number;
+        selectedExtras?: string[];
+        vehicleType?: string;
+        frequency?: string;
+        promoCode?: string;
+    }): Promise<ApiResponse> {
+        return this.request('/pricing/calculate', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    }
+
+    async getPricingServices(vehicleType?: string): Promise<ApiResponse> {
+        const params = vehicleType ? `?vehicleType=${vehicleType}` : '';
+        return this.request(`/pricing/services${params}`);
+    }
+
+    async validatePricingPromoCode(data: {
+        promoCode: string;
+        subtotal: number;
+        serviceIds?: string[];
+    }): Promise<ApiResponse> {
+        return this.request('/pricing/validate-promo', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    }
+
+    async getPricingConfig(): Promise<ApiResponse> {
+        return this.request('/pricing/config');
+    }
+
+    // Subscription methods
+    async createSubscription(data: any, token: string): Promise<ApiResponse> {
+        return this.request('/subscriptions', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        }, token);
+    }
+
+    async getUserSubscriptions(token: string): Promise<ApiResponse> {
+        return this.request('/subscriptions', {}, token);
+    }
+
+    async cancelSubscription(subscriptionId: string, reason: string, token: string): Promise<ApiResponse> {
+        return this.request(`/subscriptions/${subscriptionId}/cancel`, {
+            method: 'POST',
+            body: JSON.stringify({ reason }),
+        }, token);
+    }
+
+    async pauseSubscription(subscriptionId: string, token: string): Promise<ApiResponse> {
+        return this.request(`/subscriptions/${subscriptionId}/pause`, {
+            method: 'POST',
+        }, token);
+    }
+
+    async resumeSubscription(subscriptionId: string, token: string): Promise<ApiResponse> {
+        return this.request(`/subscriptions/${subscriptionId}/resume`, {
+            method: 'POST',
+        }, token);
+    }
 }
 
 export const apiService = new ApiService(); 

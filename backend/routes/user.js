@@ -7,6 +7,7 @@ const {
   validateProfileUpdate,
   validateAddress,
   validateId,
+  validateVehicle,
 } = require("../middleware/validation");
 
 // All routes require authentication
@@ -22,13 +23,35 @@ router.get("/stats", userController.getUserStats);
 router.get("/addresses", userController.getAddresses);
 router.post("/addresses", validateAddress, userController.addAddress);
 router.put(
-  "/addresses/:addressId",
+  "/addresses/:id",
+  validateId,
   validateAddress,
   userController.updateAddress
 );
-router.delete("/addresses/:addressId", userController.deleteAddress);
+router.delete("/addresses/:id", validateId, userController.deleteAddress);
 router.get("/addresses/default", userController.getDefaultAddress);
-router.put("/addresses/:addressId/default", userController.setDefaultAddress);
+router.put(
+  "/addresses/:id/default",
+  validateId,
+  userController.setDefaultAddress
+);
+
+// Vehicle routes
+router.get("/vehicles", userController.getVehicles);
+router.post("/vehicles", validateVehicle, userController.addVehicle);
+router.put(
+  "/vehicles/:id",
+  validateId,
+  validateVehicle,
+  userController.updateVehicle
+);
+router.delete("/vehicles/:id", validateId, userController.deleteVehicle);
+router.put(
+  "/vehicles/:id/default",
+  validateId,
+  userController.setDefaultVehicle
+);
+router.get("/vehicles/default", userController.getDefaultVehicle);
 
 // Account management
 router.delete("/account", userController.deleteAccount);

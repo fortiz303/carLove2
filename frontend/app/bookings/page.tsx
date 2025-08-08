@@ -249,7 +249,7 @@ export default function BookingsPage() {
   };
 
   const getServiceNames = (services: BookingService[]) => {
-    return services.map((s) => s.service.name).join(", ");
+    return services.map((s) => s?.service?.name).join(", ");
   };
 
   // Only show "pending" or "confirmed" bookings in upcoming

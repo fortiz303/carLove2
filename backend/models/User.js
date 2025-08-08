@@ -94,6 +94,58 @@ const userSchema = new mongoose.Schema(
         },
       },
     ],
+    // Vehicles
+    vehicles: [
+      {
+        make: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        model: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        year: {
+          type: Number,
+          required: true,
+          min: 1900,
+          max: new Date().getFullYear() + 1,
+        },
+        color: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        type: {
+          type: String,
+          enum: ["sedan", "suv", "truck", "luxury", "other"],
+          required: true,
+        },
+        licensePlate: {
+          type: String,
+          trim: true,
+        },
+        vin: {
+          type: String,
+          trim: true,
+        },
+        nickname: {
+          type: String,
+          trim: true,
+          maxlength: [50, "Nickname cannot be more than 50 characters"],
+        },
+        isDefault: {
+          type: Boolean,
+          default: false,
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
     // Preferences
     preferences: {
       notifications: {
@@ -203,6 +255,66 @@ userSchema.methods.deleteAddress = function (addressId) {
   this.addresses = this.addresses.filter(
     (addr) => addr._id.toString() !== addressId
   );
+  return this.save();
+};
+
+// Vehicle management methods
+userSchema.methods.getVehicles = function () {
+  return this.vehicles.sort((a, b) => {
+    // Default vehicle first, then by creation date
+    if (a.isDefault && !b.isDefault) return -1;
+    if (!a.isDefault && b.isDefault) return 1;
+    return new Date(b.createdAt) - new Date(a.createdAt);
+  });
+};
+
+userSchema.methods.getDefaultVehicle = function () {
+  return this.vehicles.find((vehicle) => vehicle.isDefault) || this.vehicles[0];
+};
+
+userSchema.methods.addVehicle = function (vehicleData) {
+  if (vehicleData.isDefault) {
+    // Remove default from other vehicles
+    this.vehicles.forEach((vehicle) => (vehicle.isDefault = false));
+  }
+  this.vehicles.push(vehicleData);
+  return this.save();
+};
+
+userSchema.methods.updateVehicle = function (vehicleId, updateData) {
+  const vehicleIndex = this.vehicles.findIndex(
+    (vehicle) => vehicle._id.toString() === vehicleId
+  );
+  if (vehicleIndex === -1) {
+    throw new Error("Vehicle not found");
+  }
+
+  if (updateData.isDefault) {
+    this.vehicles.forEach((vehicle) => (vehicle.isDefault = false));
+  }
+
+  this.vehicles[vehicleIndex] = {
+    ...this.vehicles[vehicleIndex],
+    ...updateData,
+  };
+  return this.save();
+};
+
+userSchema.methods.deleteVehicle = function (vehicleId) {
+  this.vehicles = this.vehicles.filter(
+    (vehicle) => vehicle._id.toString() !== vehicleId
+  );
+  return this.save();
+};
+
+userSchema.methods.setDefaultVehicle = function (vehicleId) {
+  this.vehicles.forEach((vehicle) => (vehicle.isDefault = false));
+  const vehicle = this.vehicles.find(
+    (vehicle) => vehicle._id.toString() === vehicleId
+  );
+  if (vehicle) {
+    vehicle.isDefault = true;
+  }
   return this.save();
 };
 

@@ -10,6 +10,21 @@ export interface CarDetails {
   type: "sedan" | "suv" | "truck" | "luxury" | "other";
   licensePlate?: string;
   vin?: string;
+  nickname?: string;
+}
+
+export interface Vehicle {
+  _id: string;
+  make: string;
+  model: string;
+  year: number;
+  color: string;
+  type: "sedan" | "suv" | "truck" | "luxury" | "other";
+  licensePlate?: string;
+  vin?: string;
+  nickname?: string;
+  isDefault: boolean;
+  createdAt: string;
 }
 
 export interface AddressData {
@@ -17,8 +32,8 @@ export interface AddressData {
   city: string;
   state: string;
   zipCode: string;
-  country: string;
-  instructions: string;
+  country?: string;
+  instructions?: string;
 }
 
 export interface BookingContextType {
@@ -50,6 +65,10 @@ export interface BookingContextType {
   ) => void;
   carDetails: CarDetails | null;
   setCarDetails: (details: CarDetails | null) => void;
+  selectedVehicle: Vehicle | null;
+  setSelectedVehicle: (vehicle: Vehicle | null) => void;
+  vehicles: Vehicle[];
+  setVehicles: (vehicles: Vehicle[]) => void;
 }
 
 const BookingContext = createContext<BookingContextType | undefined>(undefined);
@@ -66,7 +85,7 @@ export const BookingProvider = ({ children }: { children: ReactNode }) => {
   const [asapChecked, setAsapChecked] = useState(false);
   const [location, setLocation] = useState("");
   const [addressData, setAddressData] = useState<AddressData | null>(null);
-  const [selectedFrequency, setSelectedFrequency] = useState("weekly");
+  const [selectedFrequency, setSelectedFrequency] = useState("one-time");
   const [promoCode, setPromoCode] = useState("");
   const [pricing, setPricing] = useState<{
     subtotal: number;
@@ -74,6 +93,8 @@ export const BookingProvider = ({ children }: { children: ReactNode }) => {
     total: number;
   } | null>(null);
   const [carDetails, setCarDetails] = useState<CarDetails | null>(null);
+  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
 
   return (
     <BookingContext.Provider
@@ -104,6 +125,10 @@ export const BookingProvider = ({ children }: { children: ReactNode }) => {
         setPricing,
         carDetails,
         setCarDetails,
+        selectedVehicle,
+        setSelectedVehicle,
+        vehicles,
+        setVehicles,
       }}
     >
       {children}

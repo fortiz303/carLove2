@@ -89,6 +89,8 @@ const services = [
 
 async function seedServices() {
   try {
+    console.log("Starting service seeding...");
+    
     // Connect to MongoDB
     await mongoose.connect(process.env.MONGODB_URI);
     console.log("Connected to MongoDB");

@@ -1,6 +1,9 @@
 const mongoose = require("mongoose");
 const Booking = require("../models/Booking");
 const Service = require("../models/Service");
+const User = require("../models/User");
+const PromoCode = require("../models/PromoCode");
+const { pricingHelpers } = require("../config/pricing");
 const {
   sendBookingConfirmation,
   sendBookingCancellation,
@@ -21,19 +24,25 @@ const createBooking = async (req, res) => {
       address,
       frequency,
       specialInstructions,
+      saveVehicle = false,
+      promoCode,
     } = req.body;
 
-    // Validate services and calculate total
+    // Validate services and calculate total using pricing config
     let totalAmount = 0;
     let totalDuration = 0;
     const validatedServices = [];
 
     for (const serviceItem of services) {
+      let serviceName = serviceItem.service;
       let service;
 
       // Try to find service by ID first, then by name
       if (mongoose.Types.ObjectId.isValid(serviceItem.service)) {
         service = await Service.findById(serviceItem.service);
+        if (service) {
+          serviceName = service.name;
+        }
       }
 
       if (!service) {
@@ -42,6 +51,7 @@ const createBooking = async (req, res) => {
           name: serviceItem.service,
           isActive: true,
         });
+        serviceName = serviceItem.service;
       }
 
       if (!service || !service.isActive) {
@@ -52,7 +62,11 @@ const createBooking = async (req, res) => {
       }
 
       const quantity = serviceItem.quantity || 1;
-      const price = service.getSeasonalPrice(vehicle.type);
+      const vehicleType = vehicle?.type || "sedan";
+      const price = pricingHelpers.calculateSeasonalPrice(
+        serviceName,
+        vehicleType
+      );
 
       validatedServices.push({
         service: service._id,
@@ -62,6 +76,65 @@ const createBooking = async (req, res) => {
 
       totalAmount += price * quantity;
       totalDuration += service.duration * quantity;
+    }
+
+    // Handle promo code if provided
+    let discountAmount = 0;
+    let appliedPromoCode = null;
+
+    if (promoCode) {
+      const promoCodeDoc = await PromoCode.findOne({
+        code: promoCode.toUpperCase(),
+      });
+      if (promoCodeDoc) {
+        // Get service IDs for validation
+        const serviceIds = validatedServices.map((s) => s.service);
+
+        // Validate promo code
+        const validation = promoCodeDoc.validateForUser(
+          req.user.id,
+          totalAmount,
+          serviceIds
+        );
+        if (validation.valid) {
+          // Calculate discount
+          discountAmount = promoCodeDoc.calculateDiscount(totalAmount);
+          appliedPromoCode = promoCodeDoc._id;
+
+          // Apply discount to total
+          totalAmount -= discountAmount;
+
+          // Ensure total doesn't go below 0
+          if (totalAmount < 0) totalAmount = 0;
+        }
+      }
+    }
+
+    // Save vehicle to user's vehicles if requested
+    if (saveVehicle && vehicle) {
+      try {
+        const user = await User.findById(req.user.id);
+        if (user) {
+          // Check if vehicle already exists (by make, model, year, and license plate if provided)
+          const existingVehicle = user.vehicles.find(
+            (v) =>
+              v.make.toLowerCase() === vehicle.make.toLowerCase() &&
+              v.model.toLowerCase() === vehicle.model.toLowerCase() &&
+              v.year === vehicle.year &&
+              (!vehicle.licensePlate || v.licensePlate === vehicle.licensePlate)
+          );
+
+          if (!existingVehicle) {
+            await user.addVehicle({
+              ...vehicle,
+              isDefault: user.vehicles.length === 0, // Make default if it's the first vehicle
+            });
+          }
+        }
+      } catch (vehicleError) {
+        console.error("Error saving vehicle to user:", vehicleError);
+        // Don't fail the booking creation if vehicle saving fails
+      }
     }
 
     // Create booking
@@ -76,9 +149,29 @@ const createBooking = async (req, res) => {
       address,
       frequency,
       specialInstructions,
+      promoCode: appliedPromoCode,
+      discountAmount,
     });
 
     await booking.save();
+
+    // Apply promo code usage if discount was applied
+    if (appliedPromoCode && discountAmount > 0) {
+      try {
+        const promoCodeDoc = await PromoCode.findById(appliedPromoCode);
+        if (promoCodeDoc) {
+          await promoCodeDoc.apply(
+            req.user.id,
+            booking._id,
+            totalAmount + discountAmount,
+            discountAmount
+          );
+        }
+      } catch (promoError) {
+        console.error("Error applying promo code usage:", promoError);
+        // Don't fail the booking creation if promo code tracking fails
+      }
+    }
 
     // Populate for email
     await booking.populate("services.service user");

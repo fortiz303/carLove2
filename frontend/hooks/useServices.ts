@@ -1,97 +1,93 @@
-import { useQuery, useMutation, useQueryClient } from "react-query";
-import { apiService } from "@/lib/api";
+import { useState, useEffect } from 'react';
+import { apiService } from '@/lib/api';
 
-// Types
 export interface Service {
-    id: string;
-    name: string;
-    description: string;
-    price: number;
-    duration: number;
-    category: string;
-    image?: string;
+  _id: string;
+  name: string;
+  description: string;
+  category: string;
+  basePrice: number;
+  duration: number;
+  isActive: boolean;
+  image: string;
+  features: string[];
+  requirements: string[];
+  vehicleTypePricing: {
+    sedan: number;
+    suv: number;
+    truck: number;
+    luxury: number;
+  };
 }
 
-// Query keys
-export const serviceKeys = {
-    all: ["services"] as const,
-    lists: () => [...serviceKeys.all, "list"] as const,
-    list: (filters: string) => [...serviceKeys.lists(), { filters }] as const,
-    details: () => [...serviceKeys.all, "detail"] as const,
-    detail: (id: string) => [...serviceKeys.details(), id] as const,
-};
+export interface ServiceMapping {
+  [key: number]: string; // frontend ID -> backend ObjectId
+}
 
-// Hooks
 export const useServices = () => {
-    return useQuery({
-        queryKey: serviceKeys.lists(),
-        queryFn: async (): Promise<Service[]> => {
-            const response = await apiService.getServices();
-            return response.data;
-        },
-        staleTime: 5 * 60 * 1000, // 5 minutes
-    });
-};
+  const [services, setServices] = useState<Service[]>([]);
+  const [serviceMapping, setServiceMapping] = useState<ServiceMapping>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-export const useService = (id: string) => {
-    return useQuery({
-        queryKey: serviceKeys.detail(id),
-        queryFn: async (): Promise<Service> => {
-            const response = await apiService.getService(id);
-            return response.data;
-        },
-        enabled: !!id,
-    });
-};
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const response = await apiService.getServices();
+        
+        if (response.success && response.data?.services) {
+          const fetchedServices = response.data.services;
+          setServices(fetchedServices);
+          
+          // Create mapping from frontend IDs to backend ObjectIds
+          const mapping: ServiceMapping = {};
+          fetchedServices.forEach((service: Service) => {
+            // Map service names to frontend IDs based on the detailingOptions
+            if (service.name === "Interior Only") {
+              mapping[1] = service._id;
+            } else if (service.name === "Exterior Only") {
+              mapping[2] = service._id;
+            } else if (service.name === "Full Detail") {
+              mapping[3] = service._id;
+            }
+          });
+          
+          setServiceMapping(mapping);
+        } else {
+          setError(response.message || 'Failed to fetch services');
+        }
+      } catch (err) {
+        console.error('Error fetching services:', err);
+        setError('Failed to fetch services');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-export const useCreateService = () => {
-    const queryClient = useQueryClient();
+    fetchServices();
+  }, []);
 
-    return useMutation({
-        mutationFn: async (serviceData: Omit<Service, "id">) => {
-            // Note: This would need to be implemented in the API service
-            // For now, this is a placeholder
-            throw new Error("Create service not implemented in API service");
-        },
-        onSuccess: () => {
-            // Invalidate and refetch services list
-            queryClient.invalidateQueries(serviceKeys.lists());
-        },
-    });
-};
+  const getServiceById = (id: string) => {
+    return services.find(service => service._id === id);
+  };
 
-export const useUpdateService = () => {
-    const queryClient = useQueryClient();
+  const getServiceByFrontendId = (frontendId: number) => {
+    const backendId = serviceMapping[frontendId];
+    if (backendId) {
+      return getServiceById(backendId);
+    }
+    return null;
+  };
 
-    return useMutation({
-        mutationFn: async ({ id, ...serviceData }: Partial<Service> & { id: string }) => {
-            // Note: This would need to be implemented in the API service
-            // For now, this is a placeholder
-            throw new Error("Update service not implemented in API service");
-        },
-        onSuccess: (data, variables) => {
-            // Update the cache with the new data
-            queryClient.setQueryData(serviceKeys.detail(variables.id), data);
-            // Invalidate the list to refetch
-            queryClient.invalidateQueries(serviceKeys.lists());
-        },
-    });
-};
-
-export const useDeleteService = () => {
-    const queryClient = useQueryClient();
-
-    return useMutation({
-        mutationFn: async (id: string) => {
-            // Note: This would need to be implemented in the API service
-            // For now, this is a placeholder
-            throw new Error("Delete service not implemented in API service");
-        },
-        onSuccess: (deletedId) => {
-            // Remove the deleted service from cache
-            queryClient.removeQueries(serviceKeys.detail(deletedId));
-            // Invalidate the list to refetch
-            queryClient.invalidateQueries(serviceKeys.lists());
-        },
-    });
+  return {
+    services,
+    serviceMapping,
+    loading,
+    error,
+    getServiceById,
+    getServiceByFrontendId,
+  };
 }; 

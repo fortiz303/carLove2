@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const resolvedParams = await params;
     try {
         const { rating, review } = await request.json();
         const authHeader = request.headers.get('authorization');
@@ -15,7 +16,7 @@ export async function POST(
             );
         }
 
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/${params.id}/review`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/${resolvedParams.id}/review`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

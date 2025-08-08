@@ -1,23 +1,33 @@
 "use client";
 
 import React from "react";
+import { useSearchParams } from "next/navigation";
 import ServiceList from "@/components/ServiceList";
 import LocationStep from "@/components/LocationStep";
 import DateTimePicker from "@/components/DateTimePicker";
 import PaymentSection from "@/components/PaymentSection";
 import { useBooking, BookingProvider } from "@/contexts/BookingContext";
-import { detailingOptions, extras } from "@/lib/book-appointment";
+import { extras, transformServicesToOptions } from "@/lib/book-appointment";
 import PrimaryLayout from "@/components/layout/primary";
-
-interface BookAppointmentPageProps {
-  searchParams: {
-    step: string;
-  };
-}
+import { useServices } from "@/hooks/useServices";
 
 function ServiceStep({ step }: { step: string }) {
+  const { services, loading } = useServices();
+
   if (step !== "service") return null;
-  return <ServiceList options={detailingOptions} extras={extras} />;
+
+  if (loading) {
+    return (
+      <div className="max-w-md mx-auto mt-4 px-4">
+        <div className="text-center">
+          <p>Loading services...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const serviceOptions = transformServicesToOptions(services);
+  return <ServiceList options={serviceOptions} extras={extras} />;
 }
 
 function DateTimeStep({ step }: { step: string }) {
@@ -33,13 +43,19 @@ function LocationStepWrapper({ step }: { step: string }) {
 function PaymentStep({ step }: { step: string }) {
   const { selectedServiceId, selectedDate, location, carDetails, setStep } =
     useBooking();
+  const { services, loading } = useServices();
+
   if (step !== "payment") return null;
+
+  const serviceOptions = transformServicesToOptions(services);
+  const selectedService = serviceOptions.find(
+    (o) => o.id === selectedServiceId
+  );
+
   return (
     <PaymentSection
       serviceInfo={{
-        title:
-          detailingOptions.find((o) => o.id === selectedServiceId)?.title ||
-          "Service",
+        title: selectedService?.title || "Service",
         date: selectedDate || "Date",
         location: location || "Address not set",
         vehicle: carDetails
@@ -62,10 +78,9 @@ function BookAppointmentContent({ step }: { step: string }) {
   );
 }
 
-export default function BookAppointmentPage({
-  searchParams,
-}: BookAppointmentPageProps) {
-  const step = searchParams.step || "service";
+export default function BookAppointmentPage() {
+  const searchParams = useSearchParams();
+  const step = searchParams.get("step") || "service";
   return (
     <PrimaryLayout>
       <BookingProvider>

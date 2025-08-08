@@ -15,6 +15,9 @@ const paymentRoutes = require("./routes/payment");
 const supportRoutes = require("./routes/support");
 const serviceRoutes = require("./routes/service");
 const adminRoutes = require("./routes/admin");
+const promoCodeRoutes = require("./routes/promoCode");
+const pricingRoutes = require("./routes/pricing");
+const subscriptionRoutes = require("./routes/subscriptions");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -41,7 +44,10 @@ app.use(
   })
 );
 
-// Body parsing middleware
+// Raw body parsing for Stripe webhooks (must come before other body parsers)
+app.use("/api/payments/webhook", express.raw({ type: "application/json" }));
+
+// Body parsing middleware (for all other routes)
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -65,6 +71,9 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/support", supportRoutes);
 app.use("/api/services", serviceRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api", promoCodeRoutes);
+app.use("/api/pricing", pricingRoutes);
+app.use("/api/subscriptions", subscriptionRoutes);
 
 // 404 handler
 app.use("*", (req, res) => {

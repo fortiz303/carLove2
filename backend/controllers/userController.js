@@ -349,6 +349,178 @@ const getUserStats = async (req, res) => {
   }
 };
 
+// @desc    Get user vehicles
+// @route   GET /api/user/vehicles
+// @access  Private
+const getVehicles = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    const vehicles = user.getVehicles();
+
+    res.json({
+      success: true,
+      data: { vehicles },
+    });
+  } catch (error) {
+    console.error("Get vehicles error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
+
+// @desc    Add vehicle
+// @route   POST /api/user/vehicles
+// @access  Private
+const addVehicle = async (req, res) => {
+  try {
+    const {
+      make,
+      model,
+      year,
+      color,
+      type,
+      licensePlate,
+      vin,
+      nickname,
+      isDefault,
+    } = req.body;
+
+    const user = await User.findById(req.user.id);
+
+    const vehicleData = {
+      make,
+      model,
+      year,
+      color,
+      type,
+      licensePlate,
+      vin,
+      nickname,
+      isDefault: isDefault || false,
+    };
+
+    await user.addVehicle(vehicleData);
+    const vehicles = user.getVehicles();
+
+    res.json({
+      success: true,
+      message: "Vehicle added successfully",
+      data: { vehicles },
+    });
+  } catch (error) {
+    console.error("Add vehicle error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
+
+// @desc    Update vehicle
+// @route   PUT /api/user/vehicles/:id
+// @access  Private
+const updateVehicle = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    const user = await User.findById(req.user.id);
+    await user.updateVehicle(id, updateData);
+    const vehicles = user.getVehicles();
+
+    res.json({
+      success: true,
+      message: "Vehicle updated successfully",
+      data: { vehicles },
+    });
+  } catch (error) {
+    console.error("Update vehicle error:", error);
+    if (error.message === "Vehicle not found") {
+      return res.status(404).json({
+        success: false,
+        message: "Vehicle not found",
+      });
+    }
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
+
+// @desc    Delete vehicle
+// @route   DELETE /api/user/vehicles/:id
+// @access  Private
+const deleteVehicle = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const user = await User.findById(req.user.id);
+    await user.deleteVehicle(id);
+    const vehicles = user.getVehicles();
+
+    res.json({
+      success: true,
+      message: "Vehicle deleted successfully",
+      data: { vehicles },
+    });
+  } catch (error) {
+    console.error("Delete vehicle error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
+
+// @desc    Set default vehicle
+// @route   PUT /api/user/vehicles/:id/default
+// @access  Private
+const setDefaultVehicle = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const user = await User.findById(req.user.id);
+    await user.setDefaultVehicle(id);
+    const vehicles = user.getVehicles();
+
+    res.json({
+      success: true,
+      message: "Default vehicle set successfully",
+      data: { vehicles },
+    });
+  } catch (error) {
+    console.error("Set default vehicle error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
+
+// @desc    Get default vehicle
+// @route   GET /api/user/vehicles/default
+// @access  Private
+const getDefaultVehicle = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    const defaultVehicle = user.getDefaultVehicle();
+
+    res.json({
+      success: true,
+      data: { vehicle: defaultVehicle },
+    });
+  } catch (error) {
+    console.error("Get default vehicle error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
+
 // @desc    Get staff members (Admin only)
 // @route   GET /api/user/admin/staff
 // @access  Private/Admin
@@ -386,9 +558,15 @@ module.exports = {
   addAddress,
   updateAddress,
   deleteAddress,
-  getDefaultAddress,
   setDefaultAddress,
+  getDefaultAddress,
   deleteAccount,
   getUserStats,
+  getVehicles,
+  addVehicle,
+  updateVehicle,
+  deleteVehicle,
+  setDefaultVehicle,
+  getDefaultVehicle,
   getStaffMembers,
 };

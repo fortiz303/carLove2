@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export interface CarDetails {
   make: string;
@@ -26,6 +27,7 @@ export interface CarDetails {
   type: "sedan" | "suv" | "truck" | "luxury" | "other";
   licensePlate?: string;
   vin?: string;
+  nickname?: string;
 }
 
 interface CarDetailsDialogProps {
@@ -33,6 +35,10 @@ interface CarDetailsDialogProps {
   onOpenChange: (open: boolean) => void;
   onSave: (carDetails: CarDetails) => void;
   initialData?: CarDetails;
+  title?: string;
+  showSelection?: boolean;
+  isSelected?: boolean;
+  onSelectionChange?: (selected: boolean) => void;
 }
 
 const CarDetailsDialog: React.FC<CarDetailsDialogProps> = ({
@@ -40,6 +46,10 @@ const CarDetailsDialog: React.FC<CarDetailsDialogProps> = ({
   onOpenChange,
   onSave,
   initialData,
+  title = "Vehicle Details",
+  showSelection = false,
+  isSelected = false,
+  onSelectionChange,
 }) => {
   const [carDetails, setCarDetails] = useState<CarDetails>(
     initialData || {
@@ -50,13 +60,14 @@ const CarDetailsDialog: React.FC<CarDetailsDialogProps> = ({
       type: "sedan",
       licensePlate: "",
       vin: "",
+      nickname: "",
     }
   );
 
   const [errors, setErrors] = useState<Partial<CarDetails>>({});
 
   const validateForm = () => {
-    const newErrors: Partial<CarDetails> = {};
+    const newErrors: Record<string, string> = {};
 
     if (!carDetails.make.trim()) {
       newErrors.make = "Make is required";
@@ -116,12 +127,23 @@ const CarDetailsDialog: React.FC<CarDetailsDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold">
-            Vehicle Details
-          </DialogTitle>
+          <DialogTitle className="text-xl font-semibold">{title}</DialogTitle>
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
+          <div className="space-y-2">
+            <Label htmlFor="nickname">Nickname (Optional)</Label>
+            <Input
+              id="nickname"
+              value={carDetails.nickname || ""}
+              onChange={(e) => handleInputChange("nickname", e.target.value)}
+              placeholder="e.g., My Daily Driver"
+            />
+            <p className="text-sm text-gray-500">
+              Give your vehicle a nickname for easy identification
+            </p>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="make">Make *</Label>
@@ -160,7 +182,10 @@ const CarDetailsDialog: React.FC<CarDetailsDialogProps> = ({
                 type="number"
                 value={carDetails.year}
                 onChange={(e) =>
-                  handleInputChange("year", parseInt(e.target.value) || 0)
+                  handleInputChange(
+                    "year",
+                    parseInt(e.target.value) || new Date().getFullYear()
+                  )
                 }
                 placeholder="2024"
                 min="1900"
@@ -210,26 +235,50 @@ const CarDetailsDialog: React.FC<CarDetailsDialogProps> = ({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="licensePlate">
-                License Plates (to help identify your car)
-              </Label>
+              <Label htmlFor="licensePlate">License Plate (Optional)</Label>
               <Input
                 id="licensePlate"
-                value={carDetails.licensePlate}
+                value={carDetails.licensePlate || ""}
                 onChange={(e) =>
                   handleInputChange("licensePlate", e.target.value)
                 }
                 placeholder="ABC123"
               />
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="vin">VIN (Optional)</Label>
+              <Input
+                id="vin"
+                value={carDetails.vin || ""}
+                onChange={(e) => handleInputChange("vin", e.target.value)}
+                placeholder="1HGBH41JXMN109186"
+              />
+            </div>
           </div>
         </div>
 
-        <div className="flex justify-end gap-3">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave}>Save Vehicle Details</Button>
+        <div className="flex justify-between items-center">
+          {showSelection && onSelectionChange && (
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="select-vehicle"
+                checked={isSelected}
+                onCheckedChange={(checked) =>
+                  onSelectionChange(checked as boolean)
+                }
+              />
+              <Label htmlFor="select-vehicle" className="text-sm font-medium">
+                Select this vehicle for detailing
+              </Label>
+            </div>
+          )}
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSave}>Save Vehicle</Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
