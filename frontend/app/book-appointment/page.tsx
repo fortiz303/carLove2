@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import ServiceList from "@/components/ServiceList";
 import LocationStep from "@/components/LocationStep";
@@ -78,14 +78,28 @@ function BookAppointmentContent({ step }: { step: string }) {
   );
 }
 
-export default function BookAppointmentPage() {
+function BookAppointmentWithSearchParams() {
   const searchParams = useSearchParams();
   const step = searchParams.get("step") || "service";
   return (
+    <BookingProvider>
+      <BookAppointmentContent step={step} />
+    </BookingProvider>
+  );
+}
+
+export default function BookAppointmentPage() {
+  return (
     <PrimaryLayout>
-      <BookingProvider>
-        <BookAppointmentContent step={step} />
-      </BookingProvider>
+      <Suspense
+        fallback={
+          <div className="text-center py-8">
+            <p>Loading...</p>
+          </div>
+        }
+      >
+        <BookAppointmentWithSearchParams />
+      </Suspense>
     </PrimaryLayout>
   );
 }
