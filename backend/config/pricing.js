@@ -2,7 +2,7 @@ const pricingConfig = {
   // Base service pricing
   services: {
     "Interior Only": {
-      basePrice: 75.0,
+      basePrice: 30.0,
       duration: 120, // 2 hours
       category: "interior",
       description: "Deep Clean Seats, Carpets, Panels, And More.",
@@ -24,7 +24,7 @@ const pricingConfig = {
       },
     },
     "Exterior Only": {
-      basePrice: 85.0,
+      basePrice: 20.0,
       duration: 90, // 1.5 hours
       category: "exterior",
       description: "Wash, Polish, And Protect Your Car's Exterior.",
@@ -46,7 +46,7 @@ const pricingConfig = {
       },
     },
     "Full Detail": {
-      basePrice: 150.0,
+      basePrice: 80.0,
       duration: 240, // 4 hours
       category: "full",
       description: "Complete Interior And Exterior Service.",
@@ -115,12 +115,12 @@ const pricingConfig = {
       description: "One-time service",
     },
     weekly: {
-      multiplier: 0.85, // 15% discount
-      description: "Weekly service - 15% discount",
+      multiplier: 0.8, // 20% discount
+      description: "Weekly service - 20% discount",
     },
     "bi-weekly": {
-      multiplier: 0.9, // 10% discount
-      description: "Bi-weekly service - 10% discount",
+      multiplier: 0.85, // 15% discount
+      description: "Bi-weekly service - 15% discount",
     },
   },
 
@@ -172,7 +172,7 @@ const pricingHelpers = {
   },
 
   // Calculate base price for a service
-  calculateBasePrice: (serviceName, vehicleType = "sedan") => {
+  calculateBasePrice: (serviceName) => {
     const service =
       pricingConfig.services[serviceName] || pricingConfig.addons[serviceName];
     if (!service) {
@@ -180,18 +180,13 @@ const pricingHelpers = {
       return 0;
     }
 
-    const basePrice = service.basePrice || 0;
-    const vehicleTypePricing = service.vehicleTypePricing || {};
-    const vehicleAdjustment = vehicleTypePricing[vehicleType] || 0;
-    return basePrice + vehicleAdjustment;
+    // Return only the base price, ignoring vehicle type adjustments
+    return service.basePrice || 0;
   },
 
   // Calculate seasonal price adjustment
-  calculateSeasonalPrice: (serviceName, vehicleType = "sedan") => {
-    const basePrice = pricingHelpers.calculateBasePrice(
-      serviceName,
-      vehicleType
-    );
+  calculateSeasonalPrice: (serviceName) => {
+    const basePrice = pricingHelpers.calculateBasePrice(serviceName);
     const currentSeason = pricingHelpers.getCurrentSeason();
 
     // Apply seasonal adjustments
@@ -203,8 +198,8 @@ const pricingHelpers = {
   calculateFrequencyPrice: (basePrice, frequency = "one-time") => {
     const frequencyConfig = {
       "one-time": { multiplier: 1.0 },
-      weekly: { multiplier: 0.85 }, // 15% discount
-      "bi-weekly": { multiplier: 0.9 }, // 10% discount
+      weekly: { multiplier: 0.8 }, // 20% discount
+      "bi-weekly": { multiplier: 0.85 }, // 15% discount
       monthly: { multiplier: 0.95 }, // 5% discount
     };
 
@@ -213,29 +208,18 @@ const pricingHelpers = {
   },
 
   // Calculate total price for a booking
-  calculateTotalPrice: (
-    services,
-    addons,
-    vehicleType,
-    frequency = "one-time"
-  ) => {
+  calculateTotalPrice: (services, addons, frequency = "one-time") => {
     let subtotal = 0;
 
     // Calculate service prices
     services.forEach((service) => {
-      const servicePrice = pricingHelpers.calculateSeasonalPrice(
-        service.name,
-        vehicleType
-      );
+      const servicePrice = pricingHelpers.calculateSeasonalPrice(service.name);
       subtotal += servicePrice * (service.quantity || 1);
     });
 
     // Calculate addon prices
     addons.forEach((addon) => {
-      const addonPrice = pricingHelpers.calculateSeasonalPrice(
-        addon.name,
-        vehicleType
-      );
+      const addonPrice = pricingHelpers.calculateSeasonalPrice(addon.name);
       subtotal += addonPrice * (addon.quantity || 1);
     });
 

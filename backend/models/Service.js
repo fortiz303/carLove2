@@ -110,16 +110,14 @@ const serviceSchema = new mongoose.Schema(
 serviceSchema.index({ category: 1, isActive: 1 });
 serviceSchema.index({ name: 1 });
 
-// Method to calculate price for specific vehicle type
-serviceSchema.methods.calculatePrice = function (vehicleType = "sedan") {
-  const basePrice = this.basePrice;
-  const vehicleSurcharge = this.vehicleTypePricing[vehicleType] || 0;
-  return basePrice + vehicleSurcharge;
+// Method to calculate price (vehicle type no longer affects pricing)
+serviceSchema.methods.calculatePrice = function () {
+  return this.basePrice;
 };
 
-// Method to get current seasonal price
-serviceSchema.methods.getSeasonalPrice = function (vehicleType = "sedan") {
-  const basePrice = this.calculatePrice(vehicleType);
+// Method to get current seasonal price (vehicle type no longer affects pricing)
+serviceSchema.methods.getSeasonalPrice = function () {
+  const basePrice = this.calculatePrice();
   const now = new Date();
 
   const currentSeason = this.seasonalPricing.find((season) => {

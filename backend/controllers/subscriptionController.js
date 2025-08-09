@@ -5,35 +5,24 @@ const User = require("../models/User");
 // const { pricingHelpers } = require("../config/pricing");
 
 // Simple pricing calculation for now
-const calculateServicePrice = (serviceName, vehicleType, frequency) => {
+const calculateServicePrice = (serviceName, frequency) => {
   const basePrices = {
-    "Interior Only": 75,
-    "Exterior Only": 85,
-    "Full Detail": 150,
-  };
-
-  const vehicleAdjustments = {
-    sedan: 0,
-    suv: 25,
-    truck: 35,
-    luxury: 50,
-    other: 15,
+    "Interior Only": 30,
+    "Exterior Only": 20,
+    "Full Detail": 80,
   };
 
   const frequencyDiscounts = {
     "one-time": 1.0,
-    weekly: 0.85, // 15% discount
-    "bi-weekly": 0.9, // 10% discount
+    weekly: 0.8, // 20% discount
+    "bi-weekly": 0.85, // 15% discount
     monthly: 0.95, // 5% discount
   };
 
-  const basePrice = basePrices[serviceName] || 75;
-  const vehicleAdjustment = vehicleAdjustments[vehicleType] || 0;
+  const basePrice = basePrices[serviceName] || 30;
   const frequencyDiscount = frequencyDiscounts[frequency] || 1.0;
 
-  return (
-    Math.round((basePrice + vehicleAdjustment) * frequencyDiscount * 100) / 100
-  );
+  return Math.round(basePrice * frequencyDiscount * 100) / 100;
 };
 
 // @desc    Create subscription
@@ -86,12 +75,8 @@ const createSubscription = async (req, res) => {
     }
 
     // Calculate price with frequency discount
-    const basePrice = calculateServicePrice(service.name, vehicle.type);
-    const discountedPrice = calculateServicePrice(
-      service.name,
-      vehicle.type,
-      frequency
-    );
+    const basePrice = calculateServicePrice(service.name, frequency);
+    const discountedPrice = calculateServicePrice(service.name, frequency);
 
     // Get or create Stripe customer
     let customerId = req.user.stripeCustomerId;

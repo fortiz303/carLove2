@@ -12,12 +12,6 @@ export interface Service {
   image: string;
   features: string[];
   requirements: string[];
-  vehicleTypePricing: {
-    sedan: number;
-    suv: number;
-    truck: number;
-    luxury: number;
-  };
 }
 
 export interface ServiceMapping {
@@ -35,13 +29,13 @@ export const useServices = () => {
       try {
         setLoading(true);
         setError(null);
-        
+
         const response = await apiService.getServices();
-        
+
         if (response.success && response.data?.services) {
           const fetchedServices = response.data.services;
           setServices(fetchedServices);
-          
+
           // Create mapping from frontend IDs to backend ObjectIds
           const mapping: ServiceMapping = {};
           fetchedServices.forEach((service: Service) => {
@@ -54,7 +48,7 @@ export const useServices = () => {
               mapping[3] = service._id;
             }
           });
-          
+
           setServiceMapping(mapping);
         } else {
           setError(response.message || 'Failed to fetch services');

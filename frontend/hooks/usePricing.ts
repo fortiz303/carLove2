@@ -19,7 +19,6 @@ export interface ServiceDetails {
     category: string;
     description: string;
     features: string[];
-    vehicleTypePricing: Record<string, number>;
 }
 
 export interface AddonDetails {
@@ -42,7 +41,6 @@ export interface PricingResponse {
         discountAmount?: number;
         finalAmount?: number;
     } | null;
-    vehicleType: string;
     frequency: string;
 }
 
@@ -77,12 +75,9 @@ export const usePricing = () => {
         setError(null);
 
         try {
-            const vehicleType = carDetails?.type || 'sedan';
-
             const response = await apiService.calculatePricing({
                 selectedServiceId,
                 selectedExtras,
-                vehicleType,
                 frequency: selectedFrequency,
                 promoCode
             });
@@ -105,7 +100,7 @@ export const usePricing = () => {
         } finally {
             setLoading(false);
         }
-    }, [selectedServiceId, selectedExtras, selectedFrequency, promoCode, carDetails?.type, setBookingPricing]);
+    }, [selectedServiceId, selectedExtras, selectedFrequency, promoCode, setBookingPricing]);
 
     // Calculate pricing on dependency changes
     useEffect(() => {

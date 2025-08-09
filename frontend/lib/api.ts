@@ -538,7 +538,6 @@ class ApiService {
     async calculatePricing(data: {
         selectedServiceId: number;
         selectedExtras?: string[];
-        vehicleType?: string;
         frequency?: string;
         promoCode?: string;
     }): Promise<ApiResponse> {

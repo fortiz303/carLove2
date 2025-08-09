@@ -16,7 +16,6 @@ A complete Express.js + MongoDB backend for a car detailing booking application 
 
 - Create and manage car detailing appointments
 - Multiple service types (Interior, Exterior, Full Detail, Add-ons)
-- Vehicle type-specific pricing
 - Date and time slot selection
 - Recurring booking options (weekly, bi-weekly, monthly)
 - Booking status tracking (Pending, Confirmed, In-Progress, Completed, Cancelled)

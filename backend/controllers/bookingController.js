@@ -62,11 +62,7 @@ const createBooking = async (req, res) => {
       }
 
       const quantity = serviceItem.quantity || 1;
-      const vehicleType = vehicle?.type || "sedan";
-      const price = pricingHelpers.calculateSeasonalPrice(
-        serviceName,
-        vehicleType
-      );
+      const price = pricingHelpers.calculateSeasonalPrice(serviceName);
 
       validatedServices.push({
         service: service._id,

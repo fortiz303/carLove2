@@ -7,34 +7,30 @@ const services = [
     name: "Interior Only",
     description: "Deep Clean Seats, Carpets, Panels, And More.",
     category: "interior",
-    basePrice: 60,
+    basePrice: 30,
     duration: 120, // 2 hours
     isActive: true,
     image: "/images/image1.png",
     features: [
-      "Deep seat cleaning",
-      "Carpet and floor mat cleaning",
-      "Dashboard and console cleaning",
-      "Door panel cleaning",
-      "Window cleaning",
+      "Vacuum and steam clean seats",
+      "Clean and condition leather/vinyl",
+      "Detail dashboard and console",
+      "Clean door panels and handles",
+      "Vacuum and clean carpets",
+      "Clean windows and mirrors",
+      "Deodorize interior",
       "Air vent cleaning",
     ],
     requirements: [
       "Remove personal items from vehicle",
       "Provide access to vehicle",
     ],
-    vehicleTypePricing: {
-      sedan: 0,
-      suv: 20,
-      truck: 30,
-      luxury: 40,
-    },
   },
   {
     name: "Exterior Only",
     description: "Wash, Polish, And Protect Your Car's Exterior.",
     category: "exterior",
-    basePrice: 50,
+    basePrice: 20,
     duration: 90, // 1.5 hours
     isActive: true,
     image: "/images/image2.png",
@@ -50,18 +46,12 @@ const services = [
       "Vehicle should be in accessible location",
       "Clear weather conditions preferred",
     ],
-    vehicleTypePricing: {
-      sedan: 0,
-      suv: 15,
-      truck: 25,
-      luxury: 35,
-    },
   },
   {
     name: "Full Detail",
     description: "Complete Interior And Exterior Service.",
     category: "full",
-    basePrice: 100,
+    basePrice: 80,
     duration: 240, // 4 hours
     isActive: true,
     image: "/images/image3.png",
@@ -78,19 +68,13 @@ const services = [
       "Provide access to vehicle",
       "Clear weather conditions preferred",
     ],
-    vehicleTypePricing: {
-      sedan: 0,
-      suv: 35,
-      truck: 50,
-      luxury: 75,
-    },
   },
 ];
 
 async function seedServices() {
   try {
     console.log("Starting service seeding...");
-    
+
     // Connect to MongoDB
     await mongoose.connect(process.env.MONGODB_URI);
     console.log("Connected to MongoDB");

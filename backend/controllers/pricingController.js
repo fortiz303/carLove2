@@ -42,11 +42,10 @@ const calculatePricing = async (req, res) => {
       quantity: 1,
     }));
 
-    // Calculate base pricing
+    // Calculate base pricing (vehicle type is ignored in pricing calculation)
     const pricing = pricingHelpers.calculateTotalPrice(
       services,
       addons,
-      vehicleType,
       frequency
     );
 
@@ -105,14 +104,9 @@ const calculatePricing = async (req, res) => {
 // @access  Public
 const getServices = async (req, res) => {
   try {
-    const { vehicleType = "sedan" } = req.query;
-
     const services = Object.keys(pricingConfig.services).map((serviceName) => {
       const service = pricingConfig.services[serviceName];
-      const price = pricingHelpers.calculateSeasonalPrice(
-        serviceName,
-        vehicleType
-      );
+      const price = pricingHelpers.calculateSeasonalPrice(serviceName);
 
       return {
         name: serviceName,
@@ -122,16 +116,12 @@ const getServices = async (req, res) => {
         category: service.category,
         description: service.description,
         features: service.features,
-        vehicleTypePricing: service.vehicleTypePricing,
       };
     });
 
     const addons = Object.keys(pricingConfig.addons).map((addonName) => {
       const addon = pricingConfig.addons[addonName];
-      const price = pricingHelpers.calculateSeasonalPrice(
-        addonName,
-        vehicleType
-      );
+      const price = pricingHelpers.calculateSeasonalPrice(addonName);
 
       return {
         name: addonName,

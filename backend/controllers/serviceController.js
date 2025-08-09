@@ -153,7 +153,7 @@ const getPopularServices = async (req, res) => {
 // @access  Public
 const calculatePrice = async (req, res) => {
   try {
-    const { serviceId, vehicleType, quantity = 1 } = req.body;
+    const { serviceId, quantity = 1 } = req.body;
 
     const service = await Service.findById(serviceId);
     if (!service || !service.isActive) {
@@ -163,14 +163,13 @@ const calculatePrice = async (req, res) => {
       });
     }
 
-    const basePrice = service.getSeasonalPrice(vehicleType || "sedan");
+    const basePrice = service.getSeasonalPrice();
     const totalPrice = basePrice * quantity;
 
     res.json({
       success: true,
       data: {
         serviceId,
-        vehicleType: vehicleType || "sedan",
         quantity,
         basePrice,
         totalPrice,
@@ -198,7 +197,6 @@ const createService = async (req, res) => {
       duration,
       features,
       requirements,
-      vehicleTypePricing,
       image,
     } = req.body;
 
@@ -210,7 +208,6 @@ const createService = async (req, res) => {
       duration,
       features,
       requirements,
-      vehicleTypePricing,
       image,
     });
 
@@ -360,7 +357,7 @@ const seedDefaultServices = async (req, res) => {
         name: "Interior Only",
         description: "Deep Clean Seats, Carpets, Panels, And More.",
         category: "interior",
-        basePrice: 60,
+        basePrice: 30,
         duration: 120,
         isActive: true,
         image: "/images/image1.png",
@@ -387,7 +384,7 @@ const seedDefaultServices = async (req, res) => {
         name: "Exterior Only",
         description: "Wash, Polish, And Protect Your Car's Exterior.",
         category: "exterior",
-        basePrice: 50,
+        basePrice: 20,
         duration: 90,
         isActive: true,
         image: "/images/image2.png",
@@ -414,7 +411,7 @@ const seedDefaultServices = async (req, res) => {
         name: "Full Detail",
         description: "Complete Interior And Exterior Service.",
         category: "full",
-        basePrice: 100,
+        basePrice: 80,
         duration: 240,
         isActive: true,
         image: "/images/image3.png",

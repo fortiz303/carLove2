@@ -41,7 +41,6 @@ const seedPricing = async () => {
         existingService.category = serviceConfig.category;
         existingService.description = serviceConfig.description;
         existingService.features = serviceConfig.features;
-        existingService.vehicleTypePricing = serviceConfig.vehicleTypePricing;
         existingService.isActive = true;
         await existingService.save();
       } else {
@@ -53,7 +52,6 @@ const seedPricing = async () => {
           category: serviceConfig.category,
           description: serviceConfig.description,
           features: serviceConfig.features,
-          vehicleTypePricing: serviceConfig.vehicleTypePricing,
           isActive: true,
         });
         await newService.save();
